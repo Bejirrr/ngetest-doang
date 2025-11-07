@@ -54,7 +54,6 @@
       <h1>Token Manager Auto</h1>
       <p>Auto-refresh & Hapus Kadaluarsa Otomatis</p>
     </div>
-
     <div class="tabs">
       <div class="tab active" onclick="openTab('add')">Tambah User</div>
       <div class="tab" onclick="openTab('manage')">Kelola & Auto-Remove</div>
@@ -64,23 +63,17 @@
     <div id="add" class="tab-content content">
       <h3>Tambah User Baru</h3>
       <label>GitHub Username:</label>
-      <input type="text" id="githubUserAdd" placeholder="Input here" />
-
+      <input type="text" id="githubUserAdd" placeholder="john" />
       <label>Repository:</label>
       <input type="text" id="repoAdd" placeholder="my-tokens" />
-
       <label>Path File JSON:</label>
       <input type="text" id="filePathAdd" value="data/whitelist.json" />
-
       <label>Personal Access Token:</label>
-      <input type="password" id="patAdd" placeholder="Token Github" />
-
+      <input type="password" id="patAdd" placeholder="ghp_xxx..." />
       <label>Username Baru:</label>
-      <input type="text" id="usernameAdd" placeholder="Input here" />
-
+      <input type="text" id="usernameAdd" placeholder="user123" />
       <label>Kadaluarsa (YYYY-MM-DD):</label>
       <input type="date" id="expiresAdd" />
-
       <button onclick="addUser()">Tambah & Generate Token</button>
       <div id="resultAdd" class="result"></div>
     </div>
@@ -90,23 +83,17 @@
       <h3>Kelola User</h3>
       <label>GitHub Username:</label>
       <input type="text" id="githubUserDel" placeholder="john" />
-
       <label>Repository:</label>
       <input type="text" id="repoDel" placeholder="my-tokens" />
-
       <label>Path File JSON:</label>
       <input type="text" id="filePathDel" value="data/users.json" />
-
       <label>Personal Access Token:</label>
       <input type="password" id="patDel" placeholder="ghp_xxx..." />
-
       <button onclick="startAutoRefresh()" class="success">Mulai Auto-Refresh</button>
       <button onclick="stopAutoRefresh()" class="danger" style="display:none;" id="stopBtn">Stop Auto-Refresh</button>
-
       <div class="auto-remove">
         <button onclick="autoRemoveExpired()" class="success">Hapus Semua Kadaluarsa (Sekarang)</button>
       </div>
-
       <div id="status" class="status"></div>
       <div id="userList" class="user-list" style="display:none;"></div>
       <div id="resultDel" class="result"></div>
@@ -114,7 +101,7 @@
   </div>
 
   <script>
-    // UUID v4
+    // UUID v4 Generator
     function generateUUID() {
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
         const r = Math.random() * 16 | 0;
@@ -132,7 +119,11 @@
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.getElementById(tabName).style.display = 'block';
       document.querySelector(`.tab[onclick="openTab('${tabName}')"]`).classList.add('active');
-      if (tabName === 'manage') stopAutoRefresh();
+
+      if (tabName === 'manage') {
+        stopAutoRefresh();
+        loadUsers(); // Auto-load saat buka tab
+      }
     }
 
     // Helper
@@ -147,7 +138,14 @@
     }
 
     function clearResult(el) {
-      el.innerHTML = ''; el.style.display = 'none';
+      el.innerHTML = ''; 
+      el.style.display = 'none';
+    }
+
+    function updateStatus(msg) {
+      const status = document.getElementById('status');
+      status.innerHTML = `⏳ ${msg}`;
+      status.style.display = 'block';
     }
 
     // === TAMBAH USER ===
@@ -177,7 +175,9 @@
           const data = await getRes.json();
           jsonData = JSON.parse(atob(data.content));
           sha = data.sha;
-        } else if (getRes.status !== 404) throw new Error(`Gagal baca file: ${getRes.status}`);
+        } else if (getRes.status !== 404) {
+          throw new Error(`Gagal baca file: ${getRes.status}`);
+        }
 
         if (jsonData.some(u => u.username === username)) {
           showResult(result, `Username "${username}" sudah ada!`, 'error');
@@ -193,7 +193,10 @@
           body: JSON.stringify({ message: `Add user: ${username}`, content: newContent, sha, branch: 'main' })
         });
 
-        if (!putRes.ok) throw new Error(`Gagal simpan: ${putRes.status}`);
+        if (!putRes.ok) {
+          const err = await putRes.text();
+          throw new Error(`Gagal simpan: ${putRes.status} - ${err}`);
+        }
 
         showResult(result, `
           <strong>Berhasil!</strong><br><br>
@@ -222,12 +225,6 @@
       document.getElementById('stopBtn').style.display = 'none';
       document.querySelector('button[onclick="startAutoRefresh()"]').style.display = 'inline-block';
       updateStatus('Auto-refresh dihentikan');
-    }
-
-    function updateStatus(msg) {
-      const status = document.getElementById('status');
-      status.innerHTML = `<span class="loading">Loading icon</span> ${msg}`;
-      status.style.display = 'block';
     }
 
     // === LOAD USERS ===
@@ -269,7 +266,7 @@
               <strong>${user.username}</strong><br>
               <small>Expires: ${user.expiresAt}${isExpired ? ' (Kadaluarsa)' : ''}</small>
             </div>
-            <button class="delete-btn" onclick="deleteUser('${githubUser}', '${repo}', '${filePath}', '${pat}', '${user.username}', '${data.sha}', this)">
+            <button class="delete-btn" onclick="deleteUser('${githubUser}', '${repo}', '${filePath}', '${pat}', '${user.username}', this)">
               Hapus
             </button>
           `;
@@ -277,16 +274,59 @@
         });
 
         list.style.display = 'block';
-        if (!auto) updateStatus(`Ditemukan ${jsonData.length} user. Auto-refresh: aktif`);
+        if (!auto) updateStatus(`Ditemukan ${jsonData.length} user.`);
       } catch (err) {
         if (!auto) showResult(result, err.message, 'error');
       }
     }
 
     // === HAPUS USER ===
-    async function deleteUser(githubUser, repo, filePath, pat, username, oldSha, btn) {
-      if (!confirm(`Hapus "${username}"?`)) return;
+    async function deleteUser(githubUser, repo, filePath, pat, username, btn) {
+      if (!confirm(`Hapus user "${username}"?`)) return;
       await performDelete(githubUser, repo, filePath, pat, username, btn);
+    }
+
+    async function performDelete(githubUser, repo, filePath, pat, username, btn) {
+      const apiUrl = `https://api.github.com/repos/${githubUser}/${repo}/contents/${filePath}`;
+      const result = document.getElementById('resultDel');
+
+      try {
+        const res = await fetch(apiUrl, { headers: authHeader(pat) });
+        if (!res.ok) throw new Error(`Gagal baca file: ${res.status}`);
+
+        const data = await res.json();
+        let jsonData = JSON.parse(atob(data.content));
+
+        const newData = jsonData.filter(u => u.username !== username);
+        if (jsonData.length === newData.length) {
+          showResult(result, `User "${username}" tidak ditemukan.`, 'error');
+          return;
+        }
+
+        const newContent = btoa(JSON.stringify(newData, null, 2));
+
+        const putRes = await fetch(apiUrl, {
+          method: 'PUT',
+          headers: { ...authHeader(pat), 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: `Delete user: ${username}`,
+            content: newContent,
+            sha: data.sha,
+            branch: 'main'
+          })
+        });
+
+        if (!putRes.ok) {
+          const err = await putRes.text();
+          throw new Error(`Gagal update: ${putRes.status} - ${err}`);
+        }
+
+        btn.parentElement.remove();
+        showResult(result, `User "${username}" berhasil dihapus!`, 'success');
+        if (refreshInterval) loadUsers(true);
+      } catch (err) {
+        showResult(result, err.message, 'error');
+      }
     }
 
     // === AUTO REMOVE EXPIRED ===
@@ -295,100 +335,62 @@
       const repo = document.getElementById('repoDel').value.trim();
       const filePath = document.getElementById('filePathDel').value.trim();
       const pat = document.getElementById('patDel').value.trim();
+      const result = document.getElementById('resultDel');
 
       if (!githubUser || !repo || !filePath || !pat) {
-        showResult(document.getElementById('resultDel'), 'Isi semua...      showResult(document.getElementById('resultDel'), 'Isi semua field GitHub!', 'error');
-      return;
-    }
-
-    const apiUrl = `https://api.github.com/repos/${githubUser}/${repo}/contents/${filePath}`;
-    const result = document.getElementById('resultDel');
-
-    try {
-      const res = await fetch(apiUrl, { headers: authHeader(pat) });
-      if (!res.ok) throw new Error('Gagal baca file');
-
-      const data = await res.json();
-      let jsonData = JSON.parse(atob(data.content));
-      const today = new Date().toISOString().split('T')[0];
-      const expired = jsonData.filter(u => u.expiresAt < today);
-
-      if (expired.length === 0) {
-        showResult(result, 'Tidak ada user kadaluarsa.', 'info');
+        showResult(result, 'Isi semua field GitHub!', 'error');
         return;
       }
 
-      const remaining = jsonData.filter(u => u.expiresAt >= today);
-      const newContent = btoa(JSON.stringify(remaining, null, 2));
+      const apiUrl = `https://api.github.com/repos/${githubUser}/${repo}/contents/${filePath}`;
 
-      const putRes = await fetch(apiUrl, {
-        method: 'PUT',
-        headers: { ...authHeader(pat), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `Auto-remove ${expired.length} expired user(s)`,
-          content: newContent,
-          sha: data.sha,
-          branch: 'main'
-        })
-      });
+      try {
+        const res = await fetch(apiUrl, { headers: authHeader(pat) });
+        if (!res.ok) throw new Error(`Gagal baca file: ${res.status}`);
 
-      if (!putRes.ok) throw new Error('Gagal update file');
+        const data = await res.json();
+        let jsonData = JSON.parse(atob(data.content));
+        const today = new Date().toISOString().split('T')[0];
+        const expired = jsonData.filter(u => u.expiresAt < today);
 
-      showResult(result, `Berhasil menghapus ${expired.length} user kadaluarsa!`, 'success');
-      loadUsers(true); // refresh
-    } catch (err) {
-      showResult(result, err.message, 'error');
-    }
-  }
+        if (expired.length === 0) {
+          showResult(result, 'Tidak ada user kadaluarsa.', 'info');
+          return;
+        }
 
-  // Helper: perform single delete
-  async function performDelete(githubUser, repo, filePath, pat, username, btn) {
-    const apiUrl = `https://api.github.com/repos/${githubUser}/${repo}/contents/${filePath}`;
-    const result = document.getElementById('resultDel');
+        const remaining = jsonData.filter(u => u.expiresAt >= today);
+        const newContent = btoa(JSON.stringify(remaining, null, 2));
 
-    try {
-      const res = await fetch(apiUrl, { headers: authHeader(pat) });
-      if (!res.ok) throw new Error('Gagal baca file');
+        const putRes = await fetch(apiUrl, {
+          method: 'PUT',
+          headers: { ...authHeader(pat), 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: `Auto-remove ${expired.length} expired user(s)`,
+            content: newContent,
+            sha: data.sha,
+            branch: 'main'
+          })
+        });
 
-      const data = await res.json();
-      let jsonData = JSON.parse(atob(data.content));
-      const newData = jsonData.filter(u => u.username !== username);
+        if (!putRes.ok) {
+          const err = await putRes.text();
+          throw new Error(`Gagal update: ${putRes.status} - ${err}`);
+        }
 
-      if (jsonData.length === newData.length) {
-        showResult(result, 'User tidak ditemukan.', 'error');
-        return;
+        showResult(result, `Berhasil menghapus ${expired.length} user kadaluarsa!`, 'success');
+        loadUsers(true);
+      } catch (err) {
+        showResult(result, err.message, 'error');
       }
-
-      const newContent = btoa(JSON.stringify(newData, null, 2));
-      const putRes = await fetch(apiUrl, {
-        method: 'PUT',
-        headers: { ...authHeader(pat), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `Delete user: ${username}`,
-          content: newContent,
-          sha: data.sha,
-          branch: 'main'
-        })
-      });
-
-      if (!putRes.ok) throw new Error('Gagal hapus user');
-
-      btn.parentElement.remove();
-      showResult(result, `User "${username}" dihapus!`, 'success');
-    } catch (err) {
-      showResult(result, err.message, 'error');
     }
-  }
 
-  // Default expires +30 hari
-  window.onload = function() {
-    const now = new Date();
-    now.setDate(now.getDate() + 30);
-    ['expiresAdd'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = now.toISOString().split('T')[0];
-    });
-  };
+    // Default expires +30 hari
+    window.onload = function() {
+      const now = new Date();
+      now.setDate(now.getDate() + 30);
+      const expiresAdd = document.getElementById('expiresAdd');
+      if (expiresAdd) expiresAdd.value = now.toISOString().split('T')[0];
+    };
   </script>
 </body>
 </html>
