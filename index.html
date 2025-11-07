@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Token Manager Auto</title>
+  <style>
+    :root {
+      --primary: #007bff;
+      --danger: #dc3545;
+      --success: #28a745;
+      --gray: #6c757d;
+      --light: #f8f9fa;
+    }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: #f5f7fa; }
+    .container { max-width: 750px; margin: 20px auto; background: white; border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); overflow: hidden; }
+    .header { background: var(--primary); color: white; padding: 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 1.6em; }
+    .tabs { display: flex; background: #f1f1f1; }
+    .tab { flex: 1; padding: 16px; text-align: center; cursor: pointer; font-weight: 600; transition: 0.3s; }
+    .tab.active { background: white; color: var(--primary); border-bottom: 4px solid var(--primary); }
+    .tab:hover { background: #e9ecef; }
+    .content { padding: 28px; }
+    label { display: block; margin: 14px 0 6px; font-weight: 600; color: #333; }
+    input, button { padding: 12px 16px; margin: 8px 0; width: 100%; font-size: 16px; border: 1px solid #ddd; border-radius: 8px; }
+    input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,123,255,0.15); }
+    button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
+    button:hover { background: #0056b3; }
+    button.danger { background: var(--danger); }
+    button.danger:hover { background: #c82333; }
+    button.success { background: var(--success); }
+    button.success:hover { background: #218838; }
+    .result { margin-top: 20px; padding: 16px; border-radius: 8px; font-size: 15px; display: none; }
+    .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+    .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+    .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+    code { background: #f1f1f1; padding: 3px 7px; border-radius: 5px; font-family: 'Courier New', monospace; word-break: break-all; }
+    .user-list { margin-top: 15px; max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 12px; background: #fafafa; }
+    .user-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: white; margin-bottom: 8px; border-radius: 6px; }
+    .user-item.expired { opacity: 0.6; background: #fff3cd; border-left: 4px solid #ffc107; }
+    .user-info { flex: 1; }
+    .user-info small { color: var(--gray); }
+    .delete-btn { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 13px; }
+    .delete-btn:hover { background: #c82333; }
+    .status { font-size: 14px; color: var(--gray); margin-top: 10px; text-align: center; }
+    .loading { color: var(--primary); font-style: italic; }
+    .auto-remove { margin-top: 15px; text-align: center; }
+    .auto-remove button { width: auto; padding: 10px 20px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Token Manager Auto</h1>
+      <p>Auto-refresh & Hapus Kadaluarsa Otomatis</p>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="openTab('add')">Tambah User</div>
+      <div class="tab" onclick="openTab('manage')">Kelola & Auto-Remove</div>
+    </div>
+
+    <!-- TAB TAMBAH USER -->
+    <div id="add" class="tab-content content">
+      <h3>Tambah User Baru</h3>
+      <label>GitHub Username:</label>
+      <input type="text" id="githubUserAdd" placeholder="Input here" />
+
+      <label>Repository:</label>
+      <input type="text" id="repoAdd" placeholder="my-tokens" />
+
+      <label>Path File JSON:</label>
+      <input type="text" id="filePathAdd" value="data/whitelist.json" />
+
+      <label>Personal Access Token:</label>
+      <input type="password" id="patAdd" placeholder="Token Github" />
+
+      <label>Username Baru:</label>
+      <input type="text" id="usernameAdd" placeholder="Input here" />
+
+      <label>Kadaluarsa (YYYY-MM-DD):</label>
+      <input type="date" id="expiresAdd" />
+
+      <button onclick="addUser()">Tambah & Generate Token</button>
+      <div id="resultAdd" class="result"></div>
+    </div>
+
+    <!-- TAB KELOLA & AUTO-REMOVE -->
+    <div id="manage" class="tab-content content" style="display:none;">
+      <h3>Kelola User</h3>
+      <label>GitHub Username:</label>
+      <input type="text" id="githubUserDel" placeholder="john" />
+
+      <label>Repository:</label>
+      <input type="text" id="repoDel" placeholder="my-tokens" />
+
+      <label>Path File JSON:</label>
+      <input type="text" id="filePathDel" value="data/users.json" />
+
+      <label>Personal Access Token:</label>
+      <input type="password" id="patDel" placeholder="ghp_xxx..." />
+
+      <button onclick="startAutoRefresh()" class="success">Mulai Auto-Refresh</button>
+      <button onclick="stopAutoRefresh()" class="danger" style="display:none;" id="stopBtn">Stop Auto-Refresh</button>
+
+      <div class="auto-remove">
+        <button onclick="autoRemoveExpired()" class="success">Hapus Semua Kadaluarsa (Sekarang)</button>
+      </div>
+
+      <div id="status" class="status"></div>
+      <div id="userList" class="user-list" style="display:none;"></div>
+      <div id="resultDel" class="result"></div>
+    </div>
+  </div>
+
+  <script>
+    // UUID v4
+    function generateUUID() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    let refreshInterval = null;
+    const REFRESH_INTERVAL = 5000; // 5 detik
+
+    // Tab Switch
+    function openTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(tabName).style.display = 'block';
+      document.querySelector(`.tab[onclick="openTab('${tabName}')"]`).classList.add('active');
+      if (tabName === 'manage') stopAutoRefresh();
+    }
+
+    // Helper
+    function authHeader(pat) {
+      return { 'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github.v3+json' };
+    }
+
+    function showResult(el, msg, type) {
+      el.innerHTML = msg;
+      el.className = `result ${type}`;
+      el.style.display = 'block';
+    }
+
+    function clearResult(el) {
+      el.innerHTML = ''; el.style.display = 'none';
+    }
+
+    // === TAMBAH USER ===
+    async function addUser() {
+      const result = document.getElementById('resultAdd');
+      clearResult(result);
+
+      const githubUser = document.getElementById('githubUserAdd').value.trim();
+      const repo = document.getElementById('repoAdd').value.trim();
+      const filePath = document.getElementById('filePathAdd').value.trim();
+      const pat = document.getElementById('patAdd').value.trim();
+      const username = document.getElementById('usernameAdd').value.trim();
+      const expires = document.getElementById('expiresAdd').value;
+
+      if (!githubUser || !repo || !filePath || !pat || !username || !expires) {
+        showResult(result, 'Semua field wajib diisi!', 'error');
+        return;
+      }
+
+      const token = generateUUID();
+      const apiUrl = `https://api.github.com/repos/${githubUser}/${repo}/contents/${filePath}`;
+
+      try {
+        let jsonData = [], sha = null;
+        const getRes = await fetch(apiUrl, { headers: authHeader(pat) });
+        if (getRes.ok) {
+          const data = await getRes.json();
+          jsonData = JSON.parse(atob(data.content));
+          sha = data.sha;
+        } else if (getRes.status !== 404) throw new Error(`Gagal baca file: ${getRes.status}`);
+
+        if (jsonData.some(u => u.username === username)) {
+          showResult(result, `Username "${username}" sudah ada!`, 'error');
+          return;
+        }
+
+        jsonData.push({ username, token, expiresAt: expires });
+        const newContent = btoa(JSON.stringify(jsonData, null, 2));
+
+        const putRes = await fetch(apiUrl, {
+          method: 'PUT',
+          headers: { ...authHeader(pat), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: `Add user: ${username}`, content: newContent, sha, branch: 'main' })
+        });
+
+        if (!putRes.ok) throw new Error(`Gagal simpan: ${putRes.status}`);
+
+        showResult(result, `
+          <strong>Berhasil!</strong><br><br>
+          <strong>Username:</strong> ${username}<br>
+          <strong>Token:</strong><br><code>${token}</code><br>
+          <strong>Kadaluarsa:</strong> ${expires}
+        `, 'success');
+      } catch (err) {
+        showResult(result, err.message, 'error');
+      }
+    }
+
+    // === AUTO REFRESH ===
+    function startAutoRefresh() {
+      if (refreshInterval) return;
+      document.getElementById('stopBtn').style.display = 'inline-block';
+      document.querySelector('button[onclick="startAutoRefresh()"]').style.display = 'none';
+      loadUsers(true);
+      refreshInterval = setInterval(() => loadUsers(true), REFRESH_INTERVAL);
+      updateStatus('Auto-refresh aktif (setiap 5 detik)');
+    }
+
+    function stopAutoRefresh() {
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+      document.getElementById('stopBtn').style.display = 'none';
+      document.querySelector('button[onclick="startAutoRefresh()"]').style.display = 'inline-block';
+      updateStatus('Auto-refresh dihentikan');
+    }
+
+    function updateStatus(msg) {
+      const status = document.getElementById('status');
+      status.innerHTML = `<span class="loading">Loading icon</span> ${msg}`;
+      status.style.display = 'block';
+    }
+
+    // === LOAD USERS ===
+    async function loadUsers(auto = false) {
+      const result = document.getElementById('resultDel');
+      const list = document.getElementById('userList');
+      clearResult(result);
+      list.style.display = 'none';
+      list.innerHTML = '';
+
+      const githubUser = document.getElementById('githubUserDel').value.trim();
+      const repo = document.getElementById('repoDel').value.trim();
+      const filePath = document.getElementById('filePathDel').value.trim();
+      const pat = document.getElementById('patDel').value.trim();
+
+      if (!githubUser || !repo || !filePath || !pat) {
+        if (auto) return;
+        showResult(result, 'Isi semua field GitHub!', 'error');
+        return;
+      }
+
+      const apiUrl = `https://api.github.com/repos/${githubUser}/${repo}/contents/${filePath}`;
+
+      try {
+        const res = await fetch(apiUrl, { headers: authHeader(pat) });
+        if (!res.ok) throw new Error(`File tidak ditemukan: ${res.status}`);
+
+        const data = await res.json();
+        const jsonData = JSON.parse(atob(data.content));
+        const today = new Date().toISOString().split('T')[0];
+
+        list.innerHTML = '';
+        jsonData.forEach(user => {
+          const isExpired = user.expiresAt < today;
+          const div = document.createElement('div');
+          div.className = `user-item ${isExpired ? 'expired' : ''}`;
+          div.innerHTML = `
+            <div class="user-info">
+              <strong>${user.username}</strong><br>
+              <small>Expires: ${user.expiresAt}${isExpired ? ' (Kadaluarsa)' : ''}</small>
+            </div>
+            <button class="delete-btn" onclick="deleteUser('${githubUser}', '${repo}', '${filePath}', '${pat}', '${user.username}', '${data.sha}', this)">
+              Hapus
+            </button>
+          `;
+          list.appendChild(div);
+        });
+
+        list.style.display = 'block';
+        if (!auto) updateStatus(`Ditemukan ${jsonData.length} user. Auto-refresh: aktif`);
+      } catch (err) {
+        if (!auto) showResult(result, err.message, 'error');
+      }
+    }
+
+    // === HAPUS USER ===
+    async function deleteUser(githubUser, repo, filePath, pat, username, oldSha, btn) {
+      if (!confirm(`Hapus "${username}"?`)) return;
+      await performDelete(githubUser, repo, filePath, pat, username, btn);
+    }
+
+    // === AUTO REMOVE EXPIRED ===
+    async function autoRemoveExpired() {
+      const githubUser = document.getElementById('githubUserDel').value.trim();
+      const repo = document.getElementById('repoDel').value.trim();
+      const filePath = document.getElementById('filePathDel').value.trim();
+      const pat = document.getElementById('patDel').value.trim();
+
+      if (!githubUser || !repo || !filePath || !pat) {
+        showResult(document.getElementById('resultDel'), 'Isi semua...      showResult(document.getElementById('resultDel'), 'Isi semua field GitHub!', 'error');
+      return;
+    }
+
+    const apiUrl = `https://api.github.com/repos/${githubUser}/${repo}/contents/${filePath}`;
+    const result = document.getElementById('resultDel');
+
+    try {
+      const res = await fetch(apiUrl, { headers: authHeader(pat) });
+      if (!res.ok) throw new Error('Gagal baca file');
+
+      const data = await res.json();
+      let jsonData = JSON.parse(atob(data.content));
+      const today = new Date().toISOString().split('T')[0];
+      const expired = jsonData.filter(u => u.expiresAt < today);
+
+      if (expired.length === 0) {
+        showResult(result, 'Tidak ada user kadaluarsa.', 'info');
+        return;
+      }
+
+      const remaining = jsonData.filter(u => u.expiresAt >= today);
+      const newContent = btoa(JSON.stringify(remaining, null, 2));
+
+      const putRes = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: { ...authHeader(pat), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Auto-remove ${expired.length} expired user(s)`,
+          content: newContent,
+          sha: data.sha,
+          branch: 'main'
+        })
+      });
+
+      if (!putRes.ok) throw new Error('Gagal update file');
+
+      showResult(result, `Berhasil menghapus ${expired.length} user kadaluarsa!`, 'success');
+      loadUsers(true); // refresh
+    } catch (err) {
+      showResult(result, err.message, 'error');
+    }
+  }
+
+  // Helper: perform single delete
+  async function performDelete(githubUser, repo, filePath, pat, username, btn) {
+    const apiUrl = `https://api.github.com/repos/${githubUser}/${repo}/contents/${filePath}`;
+    const result = document.getElementById('resultDel');
+
+    try {
+      const res = await fetch(apiUrl, { headers: authHeader(pat) });
+      if (!res.ok) throw new Error('Gagal baca file');
+
+      const data = await res.json();
+      let jsonData = JSON.parse(atob(data.content));
+      const newData = jsonData.filter(u => u.username !== username);
+
+      if (jsonData.length === newData.length) {
+        showResult(result, 'User tidak ditemukan.', 'error');
+        return;
+      }
+
+      const newContent = btoa(JSON.stringify(newData, null, 2));
+      const putRes = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: { ...authHeader(pat), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Delete user: ${username}`,
+          content: newContent,
+          sha: data.sha,
+          branch: 'main'
+        })
+      });
+
+      if (!putRes.ok) throw new Error('Gagal hapus user');
+
+      btn.parentElement.remove();
+      showResult(result, `User "${username}" dihapus!`, 'success');
+    } catch (err) {
+      showResult(result, err.message, 'error');
+    }
+  }
+
+  // Default expires +30 hari
+  window.onload = function() {
+    const now = new Date();
+    now.setDate(now.getDate() + 30);
+    ['expiresAdd'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = now.toISOString().split('T')[0];
+    });
+  };
+  </script>
+</body>
+</html>
