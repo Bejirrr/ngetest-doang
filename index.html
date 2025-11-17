@@ -272,11 +272,12 @@
             for (const [name, frames] of Object.entries(jsonData)) {
                 const item = document.createElement('div');
                 item.className = 'replay-item';
-                item.onclick = () => toggleReplay(name);
-
+                
+                const safeId = 'check-' + name.replace(/[^a-zA-Z0-9]/g, '_');
+                
                 item.innerHTML = `
                     <div class="replay-info">
-                        <div class="checkbox" id="check-${name}">
+                        <div class="checkbox" id="${safeId}">
                             <span style="display: none;">✓</span>
                         </div>
                         <div>
@@ -287,24 +288,26 @@
                     <div style="font-size: 1.5em;">📄</div>
                 `;
 
+                item.onclick = () => toggleReplay(name);
                 listEl.appendChild(item);
             }
         }
 
         function toggleReplay(name) {
             const index = selectedReplays.indexOf(name);
-            const checkbox = document.querySelector(`#check-${name} span`);
+            const checkboxId = 'check-' + name.replace(/[^a-zA-Z0-9]/g, '_');
+            const checkbox = document.getElementById(checkboxId);
             const item = checkbox.closest('.replay-item');
 
             if (index > -1) {
                 selectedReplays.splice(index, 1);
-                checkbox.style.display = 'none';
-                checkbox.parentElement.classList.remove('checked');
+                checkbox.querySelector('span').style.display = 'none';
+                checkbox.classList.remove('checked');
                 item.classList.remove('selected');
             } else {
                 selectedReplays.push(name);
-                checkbox.style.display = 'block';
-                checkbox.parentElement.classList.add('checked');
+                checkbox.querySelector('span').style.display = 'block';
+                checkbox.classList.add('checked');
                 item.classList.add('selected');
             }
 
@@ -316,17 +319,23 @@
             
             if (selectedReplays.length === allReplays.length) {
                 selectedReplays = [];
-                document.querySelectorAll('.replay-item').forEach(item => {
+                allReplays.forEach(name => {
+                    const safeId = 'check-' + name.replace(/[^a-zA-Z0-9]/g, '_');
+                    const checkbox = document.getElementById(safeId);
+                    const item = checkbox.closest('.replay-item');
                     item.classList.remove('selected');
-                    item.querySelector('.checkbox').classList.remove('checked');
-                    item.querySelector('.checkbox span').style.display = 'none';
+                    checkbox.classList.remove('checked');
+                    checkbox.querySelector('span').style.display = 'none';
                 });
             } else {
                 selectedReplays = [...allReplays];
-                document.querySelectorAll('.replay-item').forEach(item => {
+                allReplays.forEach(name => {
+                    const safeId = 'check-' + name.replace(/[^a-zA-Z0-9]/g, '_');
+                    const checkbox = document.getElementById(safeId);
+                    const item = checkbox.closest('.replay-item');
                     item.classList.add('selected');
-                    item.querySelector('.checkbox').classList.add('checked');
-                    item.querySelector('.checkbox span').style.display = 'block';
+                    checkbox.classList.add('checked');
+                    checkbox.querySelector('span').style.display = 'block';
                 });
             }
 
