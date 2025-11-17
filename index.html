@@ -1,396 +1,406 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Token Manager Auto</title>
-  <style>
-    :root {
-      --primary: #007bff;
-      --danger: #dc3545;
-      --success: #28a745;
-      --gray: #6c757d;
-      --light: #f8f9fa;
-    }
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: #f5f7fa; }
-    .container { max-width: 750px; margin: 20px auto; background: white; border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); overflow: hidden; }
-    .header { background: var(--primary); color: white; padding: 20px; text-align: center; }
-    .header h1 { margin: 0; font-size: 1.6em; }
-    .tabs { display: flex; background: #f1f1f1; }
-    .tab { flex: 1; padding: 16px; text-align: center; cursor: pointer; font-weight: 600; transition: 0.3s; }
-    .tab.active { background: white; color: var(--primary); border-bottom: 4px solid var(--primary); }
-    .tab:hover { background: #e9ecef; }
-    .content { padding: 28px; }
-    label { display: block; margin: 14px 0 6px; font-weight: 600; color: #333; }
-    input, button { padding: 12px 16px; margin: 8px 0; width: 100%; font-size: 16px; border: 1px solid #ddd; border-radius: 8px; }
-    input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,123,255,0.15); }
-    button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
-    button:hover { background: #0056b3; }
-    button.danger { background: var(--danger); }
-    button.danger:hover { background: #c82333; }
-    button.success { background: var(--success); }
-    button.success:hover { background: #218838; }
-    .result { margin-top: 20px; padding: 16px; border-radius: 8px; font-size: 15px; display: none; }
-    .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
-    .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
-    .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
-    code { background: #f1f1f1; padding: 3px 7px; border-radius: 5px; font-family: 'Courier New', monospace; word-break: break-all; }
-    .user-list { margin-top: 15px; max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 12px; background: #fafafa; }
-    .user-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: white; margin-bottom: 8px; border-radius: 6px; }
-    .user-item.expired { opacity: 0.6; background: #fff3cd; border-left: 4px solid #ffc107; }
-    .user-info { flex: 1; }
-    .user-info small { color: var(--gray); }
-    .delete-btn { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 13px; }
-    .delete-btn:hover { background: #c82333; }
-    .status { font-size: 14px; color: var(--gray); margin-top: 10px; text-align: center; }
-    .loading { color: var(--primary); font-style: italic; }
-    .auto-remove { margin-top: 15px; text-align: center; }
-    .auto-remove button { width: auto; padding: 10px 20px; font-size: 14px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox Replay Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #a78bfa, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #9ca3af;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .upload-area {
+            border: 2px dashed rgba(167, 139, 250, 0.5);
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            border-color: #a78bfa;
+            background: rgba(167, 139, 250, 0.1);
+        }
+        
+        .upload-area input {
+            display: none;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            background: rgba(167, 139, 250, 0.2);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+        }
+        
+        .replay-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .replay-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .replay-item:hover {
+            border-color: rgba(167, 139, 250, 0.5);
+        }
+        
+        .replay-item.selected {
+            background: rgba(167, 139, 250, 0.3);
+            border-color: #a78bfa;
+        }
+        
+        .replay-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid white;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .checkbox.checked {
+            background: #a78bfa;
+            border-color: #a78bfa;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(45deg, #a78bfa, #ec4899);
+            color: white;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(167, 139, 250, 0.5);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .btn-small {
+            width: auto;
+            padding: 10px 20px;
+            font-size: 0.9em;
+        }
+        
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .info-box h3 {
+            margin-bottom: 10px;
+        }
+        
+        .info-box ol {
+            margin-left: 20px;
+        }
+        
+        .info-box li {
+            margin: 5px 0;
+            color: #d1d5db;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>Token Manager Auto</h1>
-      <p>Auto-refresh & Hapus Kadaluarsa Otomatis</p>
-    </div>
-    <div class="tabs">
-      <div class="tab active" onclick="openTab('add')">Tambah User</div>
-      <div class="tab" onclick="openTab('manage')">Kelola & Auto-Remove</div>
-    </div>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Roblox Replay Converter</h1>
+            <p>Convert JSON replay files to Lua format</p>
+        </div>
 
-    <!-- TAB TAMBAH USER -->
-    <div id="add" class="tab-content content">
-      <h3>Tambah User Baru</h3>
-      <label>GitHub Username:</label>
-      <input type="text" id="githubUserAdd" placeholder="john" />
-      <label>Repository:</label>
-      <input type="text" id="repoAdd" placeholder="my-tokens" />
-      <label>Path File JSON:</label>
-      <input type="text" id="filePathAdd" value="data/whitelist.json" />
-      <label>Personal Access Token:</label>
-      <input type="password" id="patAdd" placeholder="ghp_xxx..." />
-      <label>Username Baru:</label>
-      <input type="text" id="usernameAdd" placeholder="user123" />
-      <label>Kadaluarsa (YYYY-MM-DD):</label>
-      <input type="date" id="expiresAdd" />
-      <button onclick="addUser()">Tambah & Generate Token</button>
-      <div id="resultAdd" class="result"></div>
-    </div>
+        <div id="message" style="display: none;" class="message"></div>
 
-    <!-- TAB KELOLA & AUTO-REMOVE -->
-    <div id="manage" class="tab-content content" style="display:none;">
-      <h3>Kelola User</h3>
-      <label>GitHub Username:</label>
-      <input type="text" id="githubUserDel" placeholder="john" />
-      <label>Repository:</label>
-      <input type="text" id="repoDel" placeholder="my-tokens" />
-      <label>Path File JSON:</label>
-      <input type="text" id="filePathDel" value="data/users.json" />
-      <label>Personal Access Token:</label>
-      <input type="password" id="patDel" placeholder="ghp_xxx..." />
-      <button onclick="startAutoRefresh()" class="success">Mulai Auto-Refresh</button>
-      <button onclick="stopAutoRefresh()" class="danger" style="display:none;" id="stopBtn">Stop Auto-Refresh</button>
-      <div class="auto-remove">
-        <button onclick="autoRemoveExpired()" class="success">Hapus Semua Kadaluarsa (Sekarang)</button>
-      </div>
-      <div id="status" class="status"></div>
-      <div id="userList" class="user-list" style="display:none;"></div>
-      <div id="resultDel" class="result"></div>
-    </div>
-  </div>
-
-  <script>
-    // UUID v4 Generator
-    function generateUUID() {
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
-    }
-
-    let refreshInterval = null;
-    const REFRESH_INTERVAL = 5000; // 5 detik
-
-    // Tab Switch
-    function openTab(tabName) {
-      document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.getElementById(tabName).style.display = 'block';
-      document.querySelector(`.tab[onclick="openTab('${tabName}')"]`).classList.add('active');
-
-      if (tabName === 'manage') {
-        stopAutoRefresh();
-        loadUsers(); // Auto-load saat buka tab
-      }
-    }
-
-    // Helper
-    function authHeader(pat) {
-      return { 'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github.v3+json' };
-    }
-
-    function showResult(el, msg, type) {
-      el.innerHTML = msg;
-      el.className = `result ${type}`;
-      el.style.display = 'block';
-    }
-
-    function clearResult(el) {
-      el.innerHTML = ''; 
-      el.style.display = 'none';
-    }
-
-    function updateStatus(msg) {
-      const status = document.getElementById('status');
-      status.innerHTML = `⏳ ${msg}`;
-      status.style.display = 'block';
-    }
-
-    // === TAMBAH USER ===
-    async function addUser() {
-      const result = document.getElementById('resultAdd');
-      clearResult(result);
-
-      const githubUser = document.getElementById('githubUserAdd').value.trim();
-      const repo = document.getElementById('repoAdd').value.trim();
-      const filePath = document.getElementById('filePathAdd').value.trim();
-      const pat = document.getElementById('patAdd').value.trim();
-      const username = document.getElementById('usernameAdd').value.trim();
-      const expires = document.getElementById('expiresAdd').value;
-
-      if (!githubUser || !repo || !filePath || !pat || !username || !expires) {
-        showResult(result, 'Semua field wajib diisi!', 'error');
-        return;
-      }
-
-      const token = generateUUID();
-      const apiUrl = `https://api.github.com/repos/${githubUser}/${repo}/contents/${filePath}`;
-
-      try {
-        let jsonData = [], sha = null;
-        const getRes = await fetch(apiUrl, { headers: authHeader(pat) });
-        if (getRes.ok) {
-          const data = await getRes.json();
-          jsonData = JSON.parse(atob(data.content));
-          sha = data.sha;
-        } else if (getRes.status !== 404) {
-          throw new Error(`Gagal baca file: ${getRes.status}`);
-        }
-
-        if (jsonData.some(u => u.username === username)) {
-          showResult(result, `Username "${username}" sudah ada!`, 'error');
-          return;
-        }
-
-        jsonData.push({ username, token, expiresAt: expires });
-        const newContent = btoa(JSON.stringify(jsonData, null, 2));
-
-        const putRes = await fetch(apiUrl, {
-          method: 'PUT',
-          headers: { ...authHeader(pat), 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: `Add user: ${username}`, content: newContent, sha, branch: 'main' })
-        });
-
-        if (!putRes.ok) {
-          const err = await putRes.text();
-          throw new Error(`Gagal simpan: ${putRes.status} - ${err}`);
-        }
-
-        showResult(result, `
-          <strong>Berhasil!</strong><br><br>
-          <strong>Username:</strong> ${username}<br>
-          <strong>Token:</strong><br><code>${token}</code><br>
-          <strong>Kadaluarsa:</strong> ${expires}
-        `, 'success');
-      } catch (err) {
-        showResult(result, err.message, 'error');
-      }
-    }
-
-    // === AUTO REFRESH ===
-    function startAutoRefresh() {
-      if (refreshInterval) return;
-      document.getElementById('stopBtn').style.display = 'inline-block';
-      document.querySelector('button[onclick="startAutoRefresh()"]').style.display = 'none';
-      loadUsers(true);
-      refreshInterval = setInterval(() => loadUsers(true), REFRESH_INTERVAL);
-      updateStatus('Auto-refresh aktif (setiap 5 detik)');
-    }
-
-    function stopAutoRefresh() {
-      clearInterval(refreshInterval);
-      refreshInterval = null;
-      document.getElementById('stopBtn').style.display = 'none';
-      document.querySelector('button[onclick="startAutoRefresh()"]').style.display = 'inline-block';
-      updateStatus('Auto-refresh dihentikan');
-    }
-
-    // === LOAD USERS ===
-    async function loadUsers(auto = false) {
-      const result = document.getElementById('resultDel');
-      const list = document.getElementById('userList');
-      clearResult(result);
-      list.style.display = 'none';
-      list.innerHTML = '';
-
-      const githubUser = document.getElementById('githubUserDel').value.trim();
-      const repo = document.getElementById('repoDel').value.trim();
-      const filePath = document.getElementById('filePathDel').value.trim();
-      const pat = document.getElementById('patDel').value.trim();
-
-      if (!githubUser || !repo || !filePath || !pat) {
-        if (auto) return;
-        showResult(result, 'Isi semua field GitHub!', 'error');
-        return;
-      }
-
-      const apiUrl = `https://api.github.com/repos/${githubUser}/${repo}/contents/${filePath}`;
-
-      try {
-        const res = await fetch(apiUrl, { headers: authHeader(pat) });
-        if (!res.ok) throw new Error(`File tidak ditemukan: ${res.status}`);
-
-        const data = await res.json();
-        const jsonData = JSON.parse(atob(data.content));
-        const today = new Date().toISOString().split('T')[0];
-
-        list.innerHTML = '';
-        jsonData.forEach(user => {
-          const isExpired = user.expiresAt < today;
-          const div = document.createElement('div');
-          div.className = `user-item ${isExpired ? 'expired' : ''}`;
-          div.innerHTML = `
-            <div class="user-info">
-              <strong>${user.username}</strong><br>
-              <small>Expires: ${user.expiresAt}${isExpired ? ' (Kadaluarsa)' : ''}</small>
+        <div class="card">
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <div style="font-size: 3em; margin-bottom: 10px;">📁</div>
+                <div style="font-size: 1.2em; margin-bottom: 5px;">Upload JSON Replay File</div>
+                <div id="fileName" style="color: #9ca3af; font-size: 0.9em;">Click to select file</div>
+                <input type="file" id="fileInput" accept=".json">
             </div>
-            <button class="delete-btn" onclick="deleteUser('${githubUser}', '${repo}', '${filePath}', '${pat}', '${user.username}', this)">
-              Hapus
+        </div>
+
+        <div id="replaySection" style="display: none;">
+            <div class="card">
+                <div class="header-controls">
+                    <h2 id="replayCount">📋 Available Replays (0)</h2>
+                    <button class="btn-small" onclick="toggleSelectAll()">Select All</button>
+                </div>
+                <div class="replay-list" id="replayList"></div>
+            </div>
+
+            <button id="convertBtn" onclick="convertToLua()" disabled>
+                ⬇️ Convert to Lua (0 selected)
             </button>
-          `;
-          list.appendChild(div);
+        </div>
+
+        <div class="info-box" style="margin-top: 20px;">
+            <h3>💡 How to use:</h3>
+            <ol>
+                <li>Upload your JSON replay file (ReplayBubble_*.json)</li>
+                <li>Select the replays you want to convert</li>
+                <li>Click "Convert to Lua" to download the .lua files</li>
+                <li>Use the .lua files in your Roblox scripts!</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        let jsonData = null;
+        let selectedReplays = [];
+
+        function showMessage(msg) {
+            const msgEl = document.getElementById('message');
+            msgEl.textContent = msg;
+            msgEl.style.display = 'block';
+            setTimeout(() => {
+                msgEl.style.display = 'none';
+            }, 5000);
+        }
+
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                jsonData = JSON.parse(text);
+
+                if (typeof jsonData !== 'object') {
+                    showMessage('❌ Invalid JSON format!');
+                    return;
+                }
+
+                document.getElementById('fileName').textContent = file.name;
+                
+                const replays = Object.keys(jsonData);
+                document.getElementById('replayCount').textContent = `📋 Available Replays (${replays.length})`;
+                document.getElementById('replaySection').style.display = 'block';
+                
+                displayReplays();
+                showMessage(`✅ Loaded: ${file.name} (${replays.length} replays)`);
+            } catch (err) {
+                showMessage('❌ Error reading file: ' + err.message);
+            }
         });
 
-        list.style.display = 'block';
-        if (!auto) updateStatus(`Ditemukan ${jsonData.length} user.`);
-      } catch (err) {
-        if (!auto) showResult(result, err.message, 'error');
-      }
-    }
+        function displayReplays() {
+            const listEl = document.getElementById('replayList');
+            listEl.innerHTML = '';
 
-    // === HAPUS USER ===
-    async function deleteUser(githubUser, repo, filePath, pat, username, btn) {
-      if (!confirm(`Hapus user "${username}"?`)) return;
-      await performDelete(githubUser, repo, filePath, pat, username, btn);
-    }
+            for (const [name, frames] of Object.entries(jsonData)) {
+                const item = document.createElement('div');
+                item.className = 'replay-item';
+                item.onclick = () => toggleReplay(name);
 
-    async function performDelete(githubUser, repo, filePath, pat, username, btn) {
-      const apiUrl = `https://api.github.com/repos/${githubUser}/${repo}/contents/${filePath}`;
-      const result = document.getElementById('resultDel');
+                item.innerHTML = `
+                    <div class="replay-info">
+                        <div class="checkbox" id="check-${name}">
+                            <span style="display: none;">✓</span>
+                        </div>
+                        <div>
+                            <div style="font-weight: bold;">🎥 ${name}</div>
+                            <div style="font-size: 0.9em; color: #9ca3af;">⏱️ ${frames.length} frames</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 1.5em;">📄</div>
+                `;
 
-      try {
-        const res = await fetch(apiUrl, { headers: authHeader(pat) });
-        if (!res.ok) throw new Error(`Gagal baca file: ${res.status}`);
-
-        const data = await res.json();
-        let jsonData = JSON.parse(atob(data.content));
-
-        const newData = jsonData.filter(u => u.username !== username);
-        if (jsonData.length === newData.length) {
-          showResult(result, `User "${username}" tidak ditemukan.`, 'error');
-          return;
+                listEl.appendChild(item);
+            }
         }
 
-        const newContent = btoa(JSON.stringify(newData, null, 2));
+        function toggleReplay(name) {
+            const index = selectedReplays.indexOf(name);
+            const checkbox = document.querySelector(`#check-${name} span`);
+            const item = checkbox.closest('.replay-item');
 
-        const putRes = await fetch(apiUrl, {
-          method: 'PUT',
-          headers: { ...authHeader(pat), 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: `Delete user: ${username}`,
-            content: newContent,
-            sha: data.sha,
-            branch: 'main'
-          })
-        });
+            if (index > -1) {
+                selectedReplays.splice(index, 1);
+                checkbox.style.display = 'none';
+                checkbox.parentElement.classList.remove('checked');
+                item.classList.remove('selected');
+            } else {
+                selectedReplays.push(name);
+                checkbox.style.display = 'block';
+                checkbox.parentElement.classList.add('checked');
+                item.classList.add('selected');
+            }
 
-        if (!putRes.ok) {
-          const err = await putRes.text();
-          throw new Error(`Gagal update: ${putRes.status} - ${err}`);
+            updateConvertButton();
         }
 
-        btn.parentElement.remove();
-        showResult(result, `User "${username}" berhasil dihapus!`, 'success');
-        if (refreshInterval) loadUsers(true);
-      } catch (err) {
-        showResult(result, err.message, 'error');
-      }
-    }
+        function toggleSelectAll() {
+            const allReplays = Object.keys(jsonData);
+            
+            if (selectedReplays.length === allReplays.length) {
+                selectedReplays = [];
+                document.querySelectorAll('.replay-item').forEach(item => {
+                    item.classList.remove('selected');
+                    item.querySelector('.checkbox').classList.remove('checked');
+                    item.querySelector('.checkbox span').style.display = 'none';
+                });
+            } else {
+                selectedReplays = [...allReplays];
+                document.querySelectorAll('.replay-item').forEach(item => {
+                    item.classList.add('selected');
+                    item.querySelector('.checkbox').classList.add('checked');
+                    item.querySelector('.checkbox span').style.display = 'block';
+                });
+            }
 
-    // === AUTO REMOVE EXPIRED ===
-    async function autoRemoveExpired() {
-      const githubUser = document.getElementById('githubUserDel').value.trim();
-      const repo = document.getElementById('repoDel').value.trim();
-      const filePath = document.getElementById('filePathDel').value.trim();
-      const pat = document.getElementById('patDel').value.trim();
-      const result = document.getElementById('resultDel');
-
-      if (!githubUser || !repo || !filePath || !pat) {
-        showResult(result, 'Isi semua field GitHub!', 'error');
-        return;
-      }
-
-      const apiUrl = `https://api.github.com/repos/${githubUser}/${repo}/contents/${filePath}`;
-
-      try {
-        const res = await fetch(apiUrl, { headers: authHeader(pat) });
-        if (!res.ok) throw new Error(`Gagal baca file: ${res.status}`);
-
-        const data = await res.json();
-        let jsonData = JSON.parse(atob(data.content));
-        const today = new Date().toISOString().split('T')[0];
-        const expired = jsonData.filter(u => u.expiresAt < today);
-
-        if (expired.length === 0) {
-          showResult(result, 'Tidak ada user kadaluarsa.', 'info');
-          return;
+            updateConvertButton();
         }
 
-        const remaining = jsonData.filter(u => u.expiresAt >= today);
-        const newContent = btoa(JSON.stringify(remaining, null, 2));
-
-        const putRes = await fetch(apiUrl, {
-          method: 'PUT',
-          headers: { ...authHeader(pat), 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: `Auto-remove ${expired.length} expired user(s)`,
-            content: newContent,
-            sha: data.sha,
-            branch: 'main'
-          })
-        });
-
-        if (!putRes.ok) {
-          const err = await putRes.text();
-          throw new Error(`Gagal update: ${putRes.status} - ${err}`);
+        function updateConvertButton() {
+            const btn = document.getElementById('convertBtn');
+            btn.textContent = `⬇️ Convert to Lua (${selectedReplays.length} selected)`;
+            btn.disabled = selectedReplays.length === 0;
         }
 
-        showResult(result, `Berhasil menghapus ${expired.length} user kadaluarsa!`, 'success');
-        loadUsers(true);
-      } catch (err) {
-        showResult(result, err.message, 'error');
-      }
-    }
+        function parseCFrameComponents(components) {
+            if (components.length < 12) {
+                throw new Error('Invalid CFrame components');
+            }
 
-    // Default expires +30 hari
-    window.onload = function() {
-      const now = new Date();
-      now.setDate(now.getDate() + 30);
-      const expiresAdd = document.getElementById('expiresAdd');
-      if (expiresAdd) expiresAdd.value = now.toISOString().split('T')[0];
-    };
-  </script>
+            const [px, py, pz, r00, r01, r02, r10, r11, r12, r20, r21, r22] = components;
+
+            const ry = Math.atan2(-r20, Math.sqrt(r21 * r21 + r22 * r22));
+            
+            let rx, rz;
+            if (Math.abs(Math.cos(ry)) > 0.00001) {
+                rx = Math.atan2(r21, r22);
+                rz = Math.atan2(r10, r00);
+            } else {
+                rx = 0;
+                rz = Math.atan2(-r01, r11);
+            }
+
+            return { px, py, pz, rx, ry, rz };
+        }
+
+        function convertToLua() {
+            if (!jsonData || selectedReplays.length === 0) {
+                showMessage('❌ Please select at least one replay!');
+                return;
+            }
+
+            let converted = 0;
+
+            selectedReplays.forEach(replayName => {
+                const frames = jsonData[replayName];
+                if (!frames) return;
+
+                let luaContent = "return {\n";
+
+                frames.forEach(frame => {
+                    if (!frame.pos || !Array.isArray(frame.pos)) return;
+
+                    try {
+                        const { px, py, pz, rx, ry, rz } = parseCFrameComponents(frame.pos);
+                        luaContent += `    CFrame.new(${px.toFixed(15)},${py.toFixed(15)},${pz.toFixed(15)}) * CFrame.Angles(${rx.toFixed(15)},${ry.toFixed(15)},${rz.toFixed(15)}),\n`;
+                    } catch (err) {
+                        console.error('Error parsing frame:', err);
+                    }
+                });
+
+                luaContent += "}";
+
+                const safeName = replayName.replace(/[^a-zA-Z0-9\s\-_]/g, '_');
+                const blob = new Blob([luaContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Replay_${safeName}.lua`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                converted++;
+            });
+
+            showMessage(`✅ Converted ${converted} replay(s) to Lua!`);
+        }
+    </script>
 </body>
 </html>
